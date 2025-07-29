@@ -1,9 +1,8 @@
 'use client';
 import { useEffect, useRef } from "react";
-import { useScroll, useTransform, motion, useInView, spring } from 'framer-motion';
+import { useScroll, useTransform, motion, useInView, spring, useAnimate } from 'framer-motion';
 import Lenis from 'lenis';
 import dynamic from 'next/dynamic'
-import { useAnimate } from 'framer-motion';   // ⬅️ add this import
 
 const Scene = dynamic(() => import('@/components/Scene'), {
     ssr: false,
@@ -23,13 +22,18 @@ export default function Home() {
   }
 
   const container = useRef();
+  const container2 = useRef();
   
   const { scrollYProgress } = useScroll({
     target: container,
     offset: ['start end', 'end start']
   })
-
-
+  
+  const { scrollYProgress: scrollYProgress2 } = useScroll({
+    target: container2,
+    offset: ['start end', 'end start'],
+  });
+  
   useEffect( () => {
     const lenis = new Lenis()
 
@@ -44,10 +48,62 @@ export default function Home() {
 
   /* …your component boilerplate stays the same … */
   
+  const suits = ['♠', '♥', '♦', '♣'];
+  const ranks = ['A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K'];
+
+  // Generate a consistent set of cards with better distribution
+  const generateCards = (count) => {
+    const cards = [];
+    const usedIndices = new Set();
+    
+    // Create a pool of all possible cards
+    const allCards = [];
+    for (let i = 0; i < suits.length; i++) {
+      for (let j = 0; j < ranks.length; j++) {
+        allCards.push({
+          suit: suits[i],
+          rank: ranks[j],
+          color: (suits[i] === '♥' || suits[i] === '♦') ? 'text-red-600' : 'text-black'
+        });
+      }
+    }
+    
+    // Shuffle the deck using a deterministic algorithm
+    const seed = 42;
+    for (let i = allCards.length - 1; i > 0; i--) {
+      const j = (i * seed) % (i + 1);
+      [allCards[i], allCards[j]] = [allCards[j], allCards[i]];
+    }
+    
+    // Take the first 'count' cards
+    return allCards.slice(0, count);
+  };
+
+  const Card = ({ card, isMiddle }) => {
+    return (
+      <div className="w-full h-full p-6 flex flex-col justify-between">
+        <div className={`text-4xl ${card.color} ${isMiddle ? 'opacity-100' : 'opacity-70'}`}>
+          {card.rank}
+          <br />
+          {card.suit}
+        </div>
+        <div className={`text-6xl text-center ${card.color} ${isMiddle ? 'opacity-100' : 'opacity-70'}`}>
+          {card.suit}
+        </div>
+        <div className={`text-4xl rotate-180 ${card.color} ${isMiddle ? 'opacity-100' : 'opacity-70'}`}>
+          {card.rank}
+          <br />
+          {card.suit}
+        </div>
+      </div>
+    );
+  };
+
   const AnimatedBox = () => {
-    const cards   = [...Array(7).keys()];
-    const total   = cards.length;
-    const middle  = (total - 1) / 2;                // index 3
+    // Generate the same cards on both server and client
+    const cards = generateCards(7);
+    const total = cards.length;
+    const middle = (total - 1) / 2;                // index 3
 
   /* --------------------------------------------------------------------------- */
     /* parameters – make the fan wider by turning up these three numbers           */
@@ -71,7 +127,7 @@ export default function Home() {
     return (
       <div ref={container} className="flex items-center justify-center w-full">
         <div className="relative w-full h-[600px] flex items-center justify-center">
-          {cards.map((_, i) => {
+          {cards.map((card, i) => {
             const rel           = i - middle;
             const targetX       =  rel * spreadStep;
             const targetRotate  = (rel / middle) * maxRotation;
@@ -98,7 +154,9 @@ export default function Home() {
                   cursor   : isMiddle ? 'pointer' : 'default',
                 }}
                 whileHover={{ scale: 1.05, zIndex: total + 1 }}
-              />
+              >
+                <Card card={card} isMiddle={isMiddle} />
+              </motion.div>
             );
           })}
         </div>
@@ -113,10 +171,10 @@ export default function Home() {
         <Scene />
       </div>
   
-      <div ref={container}>
-        <Slide direction="left"  left="-40%" progress={scrollYProgress}/>
-        <Slide direction="right" left="-25%" progress={scrollYProgress}/>
-        <Slide direction="left"  left="-75%" progress={scrollYProgress}/>
+      <div ref={container2}>
+        <Slide direction="left"  left="-40%" progress={scrollYProgress2}/>
+        <Slide direction="right" left="-25%" progress={scrollYProgress2}/>
+        <Slide direction="left"  left="-75%" progress={scrollYProgress2}/>
       </div>
 
       <div className="relative  pt-[10vh]">
