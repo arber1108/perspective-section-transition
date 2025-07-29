@@ -5,8 +5,11 @@ import Lenis from 'lenis';
 import dynamic from 'next/dynamic'
 import AnimatedBox from '@/components/Cards'
 
-const Scene = dynamic(() => import('@/components/Scene'), {
+const Scene2 = dynamic(() => import('@/components/Scene2/Poker3D'), {
     ssr: false,
+})
+const Scene = dynamic(() => import('@/components/Scene'), {
+  ssr: false,
 })
 
 export default function Home() {
@@ -39,17 +42,19 @@ export default function Home() {
       <div className="flex h-screen bg-black">
         <Scene />
       </div>
-  
+      <div className="relative  pt-[10vh]">
+        <div className="sticky top-0 h-screen flex justify-center items-center">
+            <AnimatedBox />
+        </div>
+      </div>
       <div ref={container2}>
         <Slide direction="left"  left="-40%" progress={scrollYProgress2}/>
         <Slide direction="right" left="-25%" progress={scrollYProgress2}/>
         <Slide direction="left"  left="-75%" progress={scrollYProgress2}/>
       </div>
 
-      <div className="relative  pt-[10vh]">
-        <div className="sticky top-0 h-screen flex justify-center items-center">
-            <AnimatedBox />
-        </div>
+ 
+      <div className="h-screen flex justify-center items-center">
       </div>
     </main>
   );
