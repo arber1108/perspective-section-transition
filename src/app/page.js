@@ -4,6 +4,8 @@ import { useScroll, useTransform, motion, useInView, spring, useAnimate } from '
 import Lenis from 'lenis';
 import dynamic from 'next/dynamic'
 import AnimatedBox from '@/components/Cards'
+import Circle from '@/components/Circle'
+
 
 const Scene2 = dynamic(() => import('@/components/Scene2/Poker3D'), {
     ssr: false,
@@ -13,8 +15,14 @@ const Scene = dynamic(() => import('@/components/Scene'), {
 })
 
 export default function Home() {
+  const { scrollYProgress } = useScroll(); // Page scroll progress
 
-  
+
+  useEffect(() => {
+    return scrollYProgress.onChange((latest) => {
+      console.log("Page scroll progress:", latest);
+    });
+  }, [scrollYProgress]);
 
   const container2 = useRef();
 
@@ -34,7 +42,17 @@ export default function Home() {
     requestAnimationFrame(raf)
   }, [])
 
-
+const circle = {
+  position: 'fixed',
+  top: 0,
+  left: 0,
+  right: 0,
+  height: '100dvh',
+  zIndex: 5,
+  overflow: 'hidden',
+  pointerEvents: 'none',
+  color: '#fff',
+}
   
   
   return (
@@ -43,7 +61,7 @@ export default function Home() {
         <Scene />
       </div>
       <div className="relative  pt-[10vh]">
-        <div className="sticky top-0 h-screen flex justify-center items-center">
+        <div className="sticky top-0  flex justify-center items-center">
             <AnimatedBox />
         </div>
       </div>
@@ -53,9 +71,8 @@ export default function Home() {
         <Slide direction="left"  left="-75%" progress={scrollYProgress2}/>
       </div>
 
- 
-      <div className="h-screen flex justify-center items-center">
-      </div>
+      <Circle/>
+      
     </main>
   );
 }

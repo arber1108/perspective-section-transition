@@ -83,13 +83,7 @@ const AnimatedBox = () => {
   const [scope, animate] = useAnimate();
   const handleExpand = async () => {
     await animate(scope.current, {
-      x:          0,
-      y:          0,
-      rotate:     0,
-      width:      '100vw',
-      height:     '100vh',
-      borderRadius: 0,
-      zIndex:     999,
+      rotate:"180deg",
     }, { duration: 0.8, ease: 'easeInOut' });
   };
 
@@ -112,7 +106,7 @@ const AnimatedBox = () => {
             <motion.div
               key={i}
               ref={isMiddle ? scope : undefined}     // only centre card needs the ref
-              onClick={isMiddle ? handleExpand : undefined}
+              onTap={isMiddle ? handleExpand : undefined}
               style={{
                 ...box,
                 position : 'absolute',
