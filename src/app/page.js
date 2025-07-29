@@ -1,31 +1,29 @@
 'use client';
-import { useEffect, useRef, useState } from "react";
-import { useScroll, useTransform, motion, useInView } from 'framer-motion';
+import { useEffect, useRef } from "react";
+import { useScroll, useTransform, motion, useInView, spring } from 'framer-motion';
 import Lenis from 'lenis';
 import dynamic from 'next/dynamic'
+import { useAnimate } from 'framer-motion';   // ⬅️ add this import
 
 const Scene = dynamic(() => import('@/components/Scene'), {
     ssr: false,
 })
 
 export default function Home() {
-  const [hoveredCard, setHoveredCard] = useState(null);
 
   const box = {
-    width: 280,  // Slightly narrower for better fan effect
-    height: 400, // Standard playing card ratio
-    borderRadius: '12px',
+    width: 300,
+    height: 500,
+    borderRadius: '24px',
     backgroundColor: 'white',
-    position: 'absolute',
-    boxShadow: '0 15px 35px -5px rgba(0, 0, 0, 0.3)',
+    position: "sticky",
+    boxShadow: '0 15px 35px -5px rgba(0, 0, 0, 0.25)',
     backfaceVisibility: 'hidden',
-    willChange: 'transform, opacity',
-    border: '1px solid rgba(0,0,0,0.1)',
-    padding: '20px',
-    boxSizing: 'border-box'
+    border: '1px solid rgba(0,0,0,0.1)'
   }
 
   const container = useRef();
+  
   const { scrollYProgress } = useScroll({
     target: container,
     offset: ['start end', 'end start']
@@ -43,21 +41,72 @@ export default function Home() {
     requestAnimationFrame(raf)
   }, [])
 
-  const AnimatedBox = ({ delay = 0 }) => {
-    const ref = useRef(null);
-    const isInView = useInView(ref, { once: true, amount: 0.5 });
+
+  /* …your component boilerplate stays the same … */
+  
+  const AnimatedBox = () => {
+    const cards   = [...Array(7).keys()];
+    const total   = cards.length;
+    const middle  = (total - 1) / 2;                // index 3
+
+  /* --------------------------------------------------------------------------- */
+    /* parameters – make the fan wider by turning up these three numbers           */
+    const spreadStep  = 300;   // ⬅️ increase this (px) → cards move farther left / right
+    const maxRotation = 45;    // ⬅️ increase this (deg) → outer cards tilt more
+    const maxLift     = 120;    // ⬅️ increase this (px)  → centre card rises higher
+    /* --------------------------------------------------------------------------- */
+    const [scope, animate] = useAnimate();
+    const handleExpand = async () => {
+      await animate(scope.current, {
+        x:          0,
+        y:          0,
+        rotate:     0,
+        width:      '100vw',
+        height:     '100vh',
+        borderRadius: 0,
+        zIndex:     999,
+      }, { duration: 0.8, ease: 'easeInOut' });
+    };
   
     return (
-      <motion.div
-        ref={ref}
-        initial={{ opacity: 0, y: 100 }}
-        animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 100 }}
-        transition={{ duration: 0.8, delay, ease: "easeOut" }}
-        style={box}
-      />
+      <div ref={container} className="flex items-center justify-center w-full">
+        <div className="relative w-full h-[600px] flex items-center justify-center">
+          {cards.map((_, i) => {
+            const rel           = i - middle;
+            const targetX       =  rel * spreadStep;
+            const targetRotate  = (rel / middle) * maxRotation;
+            const targetY       = -(1 - Math.abs(rel)/middle) * maxLift;
+  
+            const x      = useTransform(scrollYProgress, [0, 1], ['0px',  `${targetX}px`]);
+            const y      = useTransform(scrollYProgress, [0, 1], ['0px',  `${targetY}px`]);
+            const rotate = useTransform(scrollYProgress, [0, 1], ['0deg', `${targetRotate}deg`]);
+  
+            const isMiddle = i === middle;
+  
+            return (
+              <motion.div
+                key={i}
+                ref={isMiddle ? scope : undefined}     // only centre card needs the ref
+                onClick={isMiddle ? handleExpand : undefined}
+                style={{
+                  ...box,
+                  position : 'absolute',
+                  x,
+                  y,
+                  rotate,
+                  zIndex   : total - Math.abs(rel),
+                  cursor   : isMiddle ? 'pointer' : 'default',
+                }}
+                whileHover={{ scale: 1.05, zIndex: total + 1 }}
+              />
+            );
+          })}
+        </div>
+      </div>
     );
   };
-
+  
+  
   return (
     <main className="overflow-visible"> {/* or use inline style overflow: clip */}
       <div className="flex h-screen bg-black">
@@ -69,84 +118,10 @@ export default function Home() {
         <Slide direction="right" left="-25%" progress={scrollYProgress}/>
         <Slide direction="left"  left="-75%" progress={scrollYProgress}/>
       </div>
-  
-      <div className="relative h-[300vh] pt-[10vh]">
-        <div className="sticky top-0 h-screen flex items-center justify-center overflow-visible">
-          <div className="relative h-[450px] w-[1200px]">
-            {[0, 1, 2, 3, 4].map((index) => {
-              const totalCards = 5;
-              const centerIndex = (totalCards - 1) / 2;
-              const distanceFromCenter = index - centerIndex;
-              
-              // Wider rotation and spacing
-              const rotation = distanceFromCenter * 12; // Increased rotation
-              const xOffset = distanceFromCenter * 120; // Increased horizontal spread
-              const yOffset = Math.abs(distanceFromCenter) * 5; // Slight vertical offset
-              
-              // Card values and suits
-              const values = ['A', 'K', 'Q', 'J', '10'];
-              const suits = ['♠', '♥', '♦', '♣'];
-              const suit = suits[index % suits.length];
-              const isRed = suit === '♥' || suit === '♦';
-              
-              return (
-                <motion.div
-                  key={index}
-                  className="absolute inset-0 m-auto origin-bottom cursor-pointer"
-                  initial={{ opacity: 0, y: 100, rotate: rotation }}
-                  style={{
-                    ...box,
-                    opacity: useTransform(scrollYProgress, 
-                      [index * 0.2, index * 0.2 + 0.2], 
-                      [0, 1]
-                    ),
-                    y: useTransform(scrollYProgress, 
-                      [index * 0.2, index * 0.2 + 0.2], 
-                      [150, yOffset]
-                    ),
-                    x: xOffset,
-                    rotate: rotation,
-                    zIndex: hoveredCard === index ? 100 : index,
-                    scale: useTransform(scrollYProgress, 
-                      [index * 0.2, index * 0.2 + 0.2], 
-                      [0.9, 1 - index * 0.01]
-                    )
-                  }}
-                  transition={{ 
-                    type: 'spring', 
-                    stiffness: 100, 
-                    damping: 20,
-                    delay: index * 0.1
-                  }}
-                  whileHover={{
-                    scale: 1.05,
-                    transition: { duration: 0.2 }
-                  }}
-                  onHoverStart={() => setHoveredCard(index)}
-                  onHoverEnd={() => setHoveredCard(null)}
-                >
-                  <div 
-                    className="w-full h-full flex flex-col justify-between p-4" 
-                    style={{ 
-                      backgroundColor: 'white',
-                      borderRadius: '8px',
-                      color: isRed ? '#e53e3e' : 'black',
-                      boxShadow: hoveredCard === index 
-                        ? '0 20px 50px -10px rgba(0, 0, 0, 0.3)' 
-                        : '0 10px 25px -5px rgba(0, 0, 0, 0.1)',
-                      transition: 'box-shadow 0.2s ease'
-                    }}
-                  >
-                    <div className="text-3xl font-bold">{values[index % values.length]}</div>
-                    <div className="text-5xl text-center my-4">{suit}</div>
-                    <div className="text-3xl font-bold self-end transform rotate-180">
-                      {values[index % values.length]}
-                    </div>
-                  </div>
-                </motion.div>
-              );
-            })}
-          </div>
+
+      <div className="relative  pt-[10vh]">
+        <div className="sticky top-0 h-screen flex justify-center items-center">
+            <AnimatedBox />
         </div>
       </div>
     </main>

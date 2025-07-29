@@ -16,7 +16,7 @@ export default function Model() {
     });
     
     // Map scroll progress to rotation (0 to 2π for a full rotation)
-    const rotation = useTransform(scrollYProgress, [0, 1], [0, Math.PI * 5]);
+    const rotation = useTransform(scrollYProgress, [0, 1], [0, Math.PI * 3]);
     
     useFrame(() => {
         if (torus.current) {
